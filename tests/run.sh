@@ -10,16 +10,18 @@ trap 'rm -rf "$TMP"' EXIT
 pass=0
 fail=0
 
+ok()  { pass=$((pass + 1)); echo "  ok    $1"; }
+bad() { fail=$((fail + 1)); echo "  FAIL  $1"; }
+
 # check <name> <config> <commands> <expected stdout>
 check() {
     printf '%s\n' "$2" > "$TMP/config.txt"
     actual=$(printf '%s\n' "$3" | "$BIN" "$TMP/config.txt" 2>&1)
     if [ "$actual" == "$4" ]; then
-        pass=$((pass + 1))
+        ok "$1"
     else
-        fail=$((fail + 1))
-        echo "FAIL: $1"
-        diff <(echo "$4") <(echo "$actual") | sed 's/^/    /'
+        bad "$1"
+        diff <(echo "$4") <(echo "$actual") | sed 's/^/        /'
     fi
 }
 
@@ -30,7 +32,7 @@ volunteer Ibrahim limited_collector 3 2
 volunteer Din limited_driver 13 4 2
 volunteer Limor driver 8 3'
 
-# --- The log, as in the assignment's example ---
+echo "the log, as in the assignment's example"
 
 check "log matches the spec example" "" \
 'customer Ben soldier 4 2
@@ -50,7 +52,7 @@ simulateStep 1 COMPLETED
 OrderID: 0, CustomerID: 0, Status: Pending
 OrderID: 1, CustomerID: 0, Status: Pending'
 
-# --- Error messages ---
+echo "error messages"
 
 check "lookups of missing things fail with the spec's messages" "$SPEC_CONFIG" \
 'order 7
@@ -79,7 +81,7 @@ OrderStatus: Pending
 numOrdersLeft: 0
 OrderID: 0, CustomerID: 1, Status: Pending'
 
-# --- An order's full path through the warehouse ---
+echo "an order's full path through the warehouse"
 
 check "an order moves Pending, Collecting, Delivering, Completed" \
 'customer A civilian 6 1
@@ -199,7 +201,7 @@ Driver: None
 OrderID: 0, CustomerID: 0, Status: Delivering
 OrderID: 1, CustomerID: 0, Status: Collecting'
 
-# --- Fairness ---
+echo "fairness"
 
 check "the older order reaches a driver first, even if collected later" 'customer A civilian 1 3
 volunteer Fast collector 1
@@ -214,7 +216,7 @@ OrderID: 0, CustomerID: 0, Status: Completed
 OrderID: 1, CustomerID: 0, Status: Completed
 OrderID: 2, CustomerID: 0, Status: Collecting'
 
-# --- Limited volunteers ---
+echo "limited volunteers"
 
 check "a limited volunteer leaves after finishing the last order" \
 'customer A civilian 1 2
@@ -256,7 +258,7 @@ TimeLeft: None
 OrdersLeft: 2
 OrderID: 0, CustomerID: 0, Status: Completed'
 
-# --- Backup and restore ---
+echo "backup and restore"
 
 check "restore brings back orders, customers and the log" "$SPEC_CONFIG" \
 'order 0
@@ -311,7 +313,7 @@ close' \
 CustomerID: 2
 numOrdersLeft: 1'
 
-# --- Input handling ---
+echo "input handling"
 
 check "malformed commands are rejected and never logged" "$SPEC_CONFIG" \
 'step
@@ -350,7 +352,7 @@ OrderID: 0, CustomerID: 0, Status: Collecting
 OrderID: 1, CustomerID: 0, Status: Collecting
 OrderID: 2, CustomerID: 1, Status: Pending'
 
-# --- The config file ---
+echo "the config file"
 
 check "config comments, blank lines and bad lines" \
 '# customers
@@ -373,12 +375,12 @@ TimeLeft: None
 OrdersLeft: No Limit"
 
 if "$BIN" "$TMP/missing.txt" < /dev/null > /dev/null 2>&1; then
-    fail=$((fail + 1)); echo "FAIL: a missing config file should exit with an error"
+    bad "a missing config file is an error"
 else
-    pass=$((pass + 1))
+    ok "a missing config file is an error"
 fi
 
-# --- Memory ---
+echo "memory"
 
 if command -v valgrind > /dev/null; then
     printf '%s\n' "$SPEC_CONFIG" > "$TMP/config.txt"
@@ -388,13 +390,14 @@ if command -v valgrind > /dev/null; then
             "$BIN" "$TMP/config.txt" > /dev/null 2> "$TMP/valgrind.txt"
     if grep -q "All heap blocks were freed" "$TMP/valgrind.txt" &&
         grep -q "ERROR SUMMARY: 0 errors" "$TMP/valgrind.txt"; then
-        pass=$((pass + 1))
+        ok "no leaks or memory errors (valgrind)"
     else
-        fail=$((fail + 1)); echo "FAIL: valgrind"; cat "$TMP/valgrind.txt"
+        bad "no leaks or memory errors (valgrind)"; cat "$TMP/valgrind.txt"
     fi
 else
     echo "(valgrind not installed, skipping the leak check)"
 fi
 
+echo
 echo "$pass passed, $fail failed"
 [ "$fail" -eq 0 ]
