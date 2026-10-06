@@ -1,0 +1,13 @@
+# Customers: customer <name> <soldier|civilian> <distance> <max_orders>
+customer Maya soldier 4 2
+customer David civilian 3 1
+
+# Volunteers:
+#   volunteer <name> collector <cooldown>
+#   volunteer <name> limited_collector <cooldown> <max_orders>
+#   volunteer <name> driver <max_distance> <distance_per_step>
+#   volunteer <name> limited_driver <max_distance> <distance_per_step> <max_orders>
+volunteer Noya collector 2
+volunteer Ibrahim limited_collector 3 2
+volunteer Din limited_driver 13 4 2
+volunteer Limor driver 8 3

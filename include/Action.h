@@ -1,34 +1,34 @@
 #pragma once
 #include <string>
 #include <vector>
-#include "WareHouse.h"
-#include "../include/WareHouse.h"
+using std::string;
+
 class WareHouse;
-using namespace std;
 extern WareHouse *backup;
 
-enum class ActionStatus{
+enum class ActionStatus {
     COMPLETED, ERROR
 };
 
-enum class CustomerType{
+enum class CustomerType {
     Soldier, Civilian
 };
 
 
-class BaseAction{
+class BaseAction {
     public:
         BaseAction();
         ActionStatus getStatus() const;
-        virtual void act(WareHouse& wareHouse)=0;
-        virtual string toString() const=0;
-        virtual BaseAction* clone() const=0;
+        virtual void act(WareHouse &wareHouse) = 0;
+        virtual string toString() const = 0;
+        virtual BaseAction *clone() const = 0;
         virtual ~BaseAction() = default;
 
     protected:
         void complete();
         void error(string errorMsg);
         string getErrorMsg() const;
+        string statusString() const; // "COMPLETED" or "ERROR", for the log
 
     private:
         string errorMsg;
@@ -36,13 +36,11 @@ class BaseAction{
 };
 
 class SimulateStep : public BaseAction {
-
     public:
         SimulateStep(int numOfSteps);
         void act(WareHouse &wareHouse) override;
-        std::string toString() const override;
+        string toString() const override;
         SimulateStep *clone() const override;
-
     private:
         const int numOfSteps;
 };
@@ -57,7 +55,6 @@ class AddOrder : public BaseAction {
         const int customerId;
 };
 
-
 class AddCustomer : public BaseAction {
     public:
         AddCustomer(const string &customerName, const string &customerType, int distance, int maxOrders);
@@ -71,8 +68,6 @@ class AddCustomer : public BaseAction {
         const int maxOrders;
 };
 
-
-
 class PrintOrderStatus : public BaseAction {
     public:
         PrintOrderStatus(int id);
@@ -83,7 +78,7 @@ class PrintOrderStatus : public BaseAction {
         const int orderId;
 };
 
-class PrintCustomerStatus: public BaseAction {
+class PrintCustomerStatus : public BaseAction {
     public:
         PrintCustomerStatus(int customerId);
         void act(WareHouse &wareHouse) override;
@@ -92,7 +87,6 @@ class PrintCustomerStatus: public BaseAction {
     private:
         const int customerId;
 };
-
 
 class PrintVolunteerStatus : public BaseAction {
     public:
@@ -104,14 +98,12 @@ class PrintVolunteerStatus : public BaseAction {
         const int volunteerId;
 };
 
-
 class PrintActionsLog : public BaseAction {
     public:
         PrintActionsLog();
         void act(WareHouse &wareHouse) override;
         PrintActionsLog *clone() const override;
         string toString() const override;
-    private:
 };
 
 class Close : public BaseAction {
@@ -120,7 +112,6 @@ class Close : public BaseAction {
         void act(WareHouse &wareHouse) override;
         Close *clone() const override;
         string toString() const override;
-    private:
 };
 
 class BackupWareHouse : public BaseAction {
@@ -129,9 +120,7 @@ class BackupWareHouse : public BaseAction {
         void act(WareHouse &wareHouse) override;
         BackupWareHouse *clone() const override;
         string toString() const override;
-    private:
 };
-
 
 class RestoreWareHouse : public BaseAction {
     public:
@@ -139,5 +128,8 @@ class RestoreWareHouse : public BaseAction {
         void act(WareHouse &wareHouse) override;
         RestoreWareHouse *clone() const override;
         string toString() const override;
-    private:
 };
+
+// Turns one line of user input into an action. Returns nullptr for an empty
+// line, or for a line that is not a valid command (usage is set to a hint).
+BaseAction *parseAction(const string &line, string &usage);

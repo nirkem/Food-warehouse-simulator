@@ -1,81 +1,46 @@
-#include "../include/Customer.h"
-using namespace std;
+#include "Customer.h"
 
-// Customer Constructor
+using std::to_string;
+
 Customer::Customer(int id, const string &name, int locationDistance, int maxOrders)
-    : id(id), name(name), locationDistance(locationDistance), maxOrders(maxOrders), ordersId() {
-}
+    : id(id), name(name), locationDistance(locationDistance), maxOrders(maxOrders), ordersId() {}
 
-// Getter for name
-const string &Customer::getName() const {
-    return name;
-}
+const string &Customer::getName() const { return name; }
 
-// Getter for id
-int Customer::getId() const {
-    return id;
-}
+int Customer::getId() const { return id; }
 
-// Getter for locationDistance
-int Customer::getCustomerDistance() const {
-    return locationDistance;
-}
+int Customer::getCustomerDistance() const { return locationDistance; }
 
-// Getter for maxOrders
-int Customer::getMaxOrders() const {
-    return maxOrders;
-}
+int Customer::getMaxOrders() const { return maxOrders; }
 
-// Getter for the number of orders the customer has made so far
-int Customer::getNumOrders() const {
-    return ordersId.size();
-}
+int Customer::getNumOrders() const { return static_cast<int>(ordersId.size()); }
 
-// Returns true if the customer can make more orders (didn't reach max orders)
-bool Customer::canMakeOrder() const {
-    return getNumOrders() < maxOrders;
-}
+bool Customer::canMakeOrder() const { return getNumOrders() < maxOrders; }
 
-// Getter for ordersId
-const vector<int> &Customer::getOrdersIds() const {
-    return ordersId;
-}
+const vector<int> &Customer::getOrdersIds() const { return ordersId; }
 
-// Add an order to the customer's list of orders
-int Customer::addOrder(int orderId) {
-
+int Customer::addOrder(int orderId)
+{
+    if (!canMakeOrder())
+    {
+        return -1;
+    }
     ordersId.push_back(orderId);
     return orderId;
 }
 
-
-
-// SOLDIER CUSTOMER:
+string Customer::toString() const
+{
+    return "Customer " + to_string(id) + " (" + name + "), distance " + to_string(locationDistance) +
+           ", " + to_string(getNumOrders()) + "/" + to_string(maxOrders) + " orders";
+}
 
 SoldierCustomer::SoldierCustomer(int id, const string &name, int locationDistance, int maxOrders)
-    : Customer(id, name, locationDistance, maxOrders) {
-}
+    : Customer(id, name, locationDistance, maxOrders) {}
 
-// copy cunstructor
-SoldierCustomer::SoldierCustomer(const SoldierCustomer &other)
-        : Customer(other) {}
-
-
-SoldierCustomer *SoldierCustomer::clone() const {
-    return new SoldierCustomer(*this);
-}
-
-
-// CIVILLIAN CUSTOMER:
+SoldierCustomer *SoldierCustomer::clone() const { return new SoldierCustomer(*this); }
 
 CivilianCustomer::CivilianCustomer(int id, const string &name, int locationDistance, int maxOrders)
-    : Customer(id, name, locationDistance, maxOrders) {
-}
+    : Customer(id, name, locationDistance, maxOrders) {}
 
-CivilianCustomer *CivilianCustomer::clone() const {
-    return new CivilianCustomer(*this);
-}
-
-// copy cunstructor
-CivilianCustomer::CivilianCustomer(const CivilianCustomer &other)
-        : Customer(other) {}
+CivilianCustomer *CivilianCustomer::clone() const { return new CivilianCustomer(*this); }

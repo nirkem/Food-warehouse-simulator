@@ -12,9 +12,10 @@ enum class OrderStatus {
     COMPLETED,
 };
 
-
-
 #define NO_VOLUNTEER -1
+
+// "Pending", "Collecting", "Delivering" or "Completed"
+string orderStatusToString(OrderStatus status);
 
 class Order {
 
@@ -22,23 +23,21 @@ class Order {
         Order(int id, int customerId, int distance);
         int getId() const;
         int getCustomerId() const;
+        int getDistance() const;
         void setStatus(OrderStatus status);
         void setCollectorId(int collectorId);
         void setDriverId(int driverId);
         int getCollectorId() const;
         int getDriverId() const;
-        int getdistance() const; //added metod
         OrderStatus getStatus() const;
-        const string toString() const;
-        string orderStatusToString(OrderStatus status) const; //added method
-        const string getIdAndStatus() const; //added method 
-        const string getClosingStatus() const; //added method 
+        const string toString() const;        // The orderStatus report
+        const string toSummaryLine() const;   // One line for the close report
 
     private:
         const int id;
         const int customerId;
         const int distance;
         OrderStatus status;
-        int collectorId; //Initialized to NO_VOLUNTEER if no collector has been assigned yet
-        int driverId; //Initialized to NO_VOLUNTEER if no driver has been assigned yet
+        int collectorId; // NO_VOLUNTEER until a collector takes the order
+        int driverId;    // NO_VOLUNTEER until a driver takes the order
 };

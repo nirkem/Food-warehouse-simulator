@@ -1,134 +1,87 @@
-#include "../include/WareHouse.h"
-#include "../include/Action.h"
-#include "../include/Customer.h"
-#include "../include/Order.h"
-#include "../include/Volunteer.h"
+#include "Action.h"
+#include "WareHouse.h"
+#include "Volunteer.h"
 
 #include <iostream>
-using namespace std;
+#include <sstream>
 
-// Implementation for BaseAction
+using std::cout;
+using std::endl;
+using std::to_string;
 
-BaseAction::BaseAction() : errorMsg("Error: "), status(ActionStatus::ERROR) {}
+// BaseAction
 
-ActionStatus BaseAction::getStatus() const
-{
-    return status;
-}
+BaseAction::BaseAction() : errorMsg(), status(ActionStatus::ERROR) {}
 
-void BaseAction::complete()
-{
-    status = ActionStatus::COMPLETED;
-}
+ActionStatus BaseAction::getStatus() const { return status; }
+
+void BaseAction::complete() { status = ActionStatus::COMPLETED; }
 
 void BaseAction::error(string errorMsg)
 {
     status = ActionStatus::ERROR;
-    cout << this->errorMsg + errorMsg << endl;
+    this->errorMsg = errorMsg;
+    cout << "Error: " << errorMsg << endl;
 }
 
-string BaseAction::getErrorMsg() const
+string BaseAction::getErrorMsg() const { return errorMsg; }
+
+string BaseAction::statusString() const
 {
-    return errorMsg;
+    return status == ActionStatus::COMPLETED ? "COMPLETED" : "ERROR";
 }
 
-// Implementation for SimulateStep
+// SimulateStep
 
 SimulateStep::SimulateStep(int numOfSteps) : numOfSteps(numOfSteps) {}
 
 void SimulateStep::act(WareHouse &wareHouse)
 {
-    for (int i = 1; i <= numOfSteps; ++i)
+    for (int i = 0; i < numOfSteps; ++i)
     {
         wareHouse.step();
     }
     complete();
-
 }
 
 string SimulateStep::toString() const
 {
-    
-    ActionStatus status = getStatus();
-    if (status == ActionStatus::COMPLETED)
-    {
-        return "simulateStep " + std::to_string(numOfSteps) + " COMPLETED";
-    }
-    else
-    {
-        return "simulateStep " + std::to_string(numOfSteps) + " ERROR";
-    }
+    return "simulateStep " + to_string(numOfSteps) + " " + statusString();
 }
 
-SimulateStep *SimulateStep::clone() const
-{
-    return new SimulateStep(*this);
-}
+SimulateStep *SimulateStep::clone() const { return new SimulateStep(*this); }
 
-// Implementation for AddOrder
+// AddOrder
 
 AddOrder::AddOrder(int id) : customerId(id) {}
 
 void AddOrder::act(WareHouse &wareHouse)
 {
-
-    if (!wareHouse.hasCustomer(customerId)) // no such custumer.
+    if (!wareHouse.hasCustomer(customerId) || !wareHouse.getCustomer(customerId).canMakeOrder())
     {
         error("Cannot place this order");
         return;
     }
-
-    // Get the customer by ID:
-    Customer &foundCustomer = (wareHouse).getCustomer(customerId);
-
-    // Check if the customer was found
-    if (foundCustomer.getId() == customerId)
-    {
-        // Check if the customer can make order
-        // IF Cant make Order:
-        if (!foundCustomer.canMakeOrder())
-        {
-            error("Cannot place this order");
-        }
-        else
-        // IF Can make Order:
-        {
-            int newOrderNumber = wareHouse.getOrderNumber();
-            Order *newOrder = new Order(newOrderNumber, customerId, foundCustomer.getCustomerDistance());
-            foundCustomer.addOrder(newOrderNumber);
-            wareHouse.addOrder(newOrder);
-            complete();
-        }
-    }
-    // if there is no customer with that ID:
-    else
-    {
-        error("Cannot place this order");
-    }
+    Customer &customer = wareHouse.getCustomer(customerId);
+    int orderId = wareHouse.nextOrderId();
+    customer.addOrder(orderId);
+    wareHouse.addOrder(new Order(orderId, customerId, customer.getCustomerDistance()));
+    complete();
 }
 
 string AddOrder::toString() const
 {
-    ActionStatus status = getStatus();
-    if (status == ActionStatus::COMPLETED)
-    {
-        return "order " + std::to_string(customerId) + " COMPLETED";
-    }
-    else
-    {
-        return "order " + std::to_string(customerId) + " ERROR";
-    }
+    return "order " + to_string(customerId) + " " + statusString();
 }
 
-AddOrder *AddOrder::clone() const
-{
-    return new AddOrder(*this);
-}
+AddOrder *AddOrder::clone() const { return new AddOrder(*this); }
 
-// Implementation for AddCustomer
+// AddCustomer
 
 AddCustomer::AddCustomer(const string &customerName, const string &customerType, int distance, int maxOrders)
-    : customerName(customerName), customerType((customerType == "soldier") ? CustomerType::Soldier : CustomerType::Civilian), distance(distance), maxOrders(maxOrders) {}
+    : customerName(customerName),
+      customerType(customerType == "soldier" ? CustomerType::Soldier : CustomerType::Civilian),
+      distance(distance), maxOrders(maxOrders) {}
 
 void AddCustomer::act(WareHouse &wareHouse)
 {
@@ -138,155 +91,105 @@ void AddCustomer::act(WareHouse &wareHouse)
 
 string AddCustomer::toString() const
 {
-    string customerTypeStr = (customerType == CustomerType::Soldier) ? "Soldier" : "Civilian";
-    return "customer" + customerName + customerTypeStr + to_string(distance) + to_string(maxOrders) + "COMPLETED";
+    string type = customerType == CustomerType::Soldier ? "soldier" : "civilian";
+    return "customer " + customerName + " " + type + " " + to_string(distance) + " " +
+           to_string(maxOrders) + " " + statusString();
 }
 
-AddCustomer *AddCustomer::clone() const
-{
-    return new AddCustomer(*this);
-}
+AddCustomer *AddCustomer::clone() const { return new AddCustomer(*this); }
 
-// Implementations for PrintOrderStatus
+// PrintOrderStatus
 
 PrintOrderStatus::PrintOrderStatus(int id) : orderId(id) {}
 
 void PrintOrderStatus::act(WareHouse &wareHouse)
 {
-    if (wareHouse.hasOrder(orderId))
+    if (!wareHouse.hasOrder(orderId))
     {
-        Order orderToPrint = wareHouse.getOrder(orderId);
-        cout << orderToPrint.toString() << endl;
-        complete();
+        error("Order doesn't exist");
+        return;
     }
-    else
-    {
-        error("Order doesn’t exist");
-    };
+    cout << wareHouse.getOrder(orderId).toString() << endl;
+    complete();
 }
 
 string PrintOrderStatus::toString() const
 {
-    ActionStatus status = getStatus();
-    if (status == ActionStatus::COMPLETED)
-    {
-        return "orderStatus " + std::to_string(orderId) + " COMPLETED";
-    }
-    else
-    {
-        return "orderStatus " + std::to_string(orderId) + " ERROR";
-    }
+    return "orderStatus " + to_string(orderId) + " " + statusString();
 }
 
-PrintOrderStatus *PrintOrderStatus::clone() const
-{
-    return new PrintOrderStatus(*this);
-}
+PrintOrderStatus *PrintOrderStatus::clone() const { return new PrintOrderStatus(*this); }
 
-// Implementations for PrintCustomerStatus
+// PrintCustomerStatus
 
 PrintCustomerStatus::PrintCustomerStatus(int customerId) : customerId(customerId) {}
 
 void PrintCustomerStatus::act(WareHouse &wareHouse)
 {
-    if (wareHouse.hasCustomer(customerId))
+    if (!wareHouse.hasCustomer(customerId))
     {
-        string statusToPrint;
-        const Customer &customerToPrint = wareHouse.getCustomer(customerId);
-        statusToPrint = "CustomerID: " + to_string(customerToPrint.getId()) + "\n";
-        for (int orderId : customerToPrint.getOrdersIds())
-        {
-            statusToPrint = statusToPrint + wareHouse.getOrder(orderId).getIdAndStatus();
-        }
-        int numOrdersLeft = customerToPrint.getMaxOrders() - customerToPrint.getNumOrders();
-        statusToPrint = statusToPrint + "numOrdersLeft: " + to_string(numOrdersLeft);
-        cout << statusToPrint << endl;
-        complete();
+        error("Customer doesn't exist");
+        return;
     }
-    else
+    const Customer &customer = wareHouse.getCustomer(customerId);
+    cout << "CustomerID: " << customerId << endl;
+    for (int orderId : customer.getOrdersIds())
     {
-        error("Customer doesn’t exist");
-    };
+        cout << "OrderId: " << orderId << endl
+             << "OrderStatus: " << orderStatusToString(wareHouse.getOrder(orderId).getStatus()) << endl;
+    }
+    cout << "numOrdersLeft: " << customer.getMaxOrders() - customer.getNumOrders() << endl;
+    complete();
 }
 
 string PrintCustomerStatus::toString() const
 {
-    ActionStatus status = getStatus();
-    if (status == ActionStatus::COMPLETED)
-    {
-        return "customerStatus " + std::to_string(customerId) + " COMPLETED";
-    }
-    else
-    {
-        return "customerStatus " + std::to_string(customerId) + " ERROR";
-    }
+    return "customerStatus " + to_string(customerId) + " " + statusString();
 }
 
-PrintCustomerStatus *PrintCustomerStatus::clone() const
-{
-    return new PrintCustomerStatus(*this);
-}
+PrintCustomerStatus *PrintCustomerStatus::clone() const { return new PrintCustomerStatus(*this); }
 
-// Implementations for PrintVolunteerStatus
+// PrintVolunteerStatus
 
 PrintVolunteerStatus::PrintVolunteerStatus(int id) : volunteerId(id) {}
 
 void PrintVolunteerStatus::act(WareHouse &wareHouse)
 {
-    if (wareHouse.hasVolunteer(volunteerId))
+    if (!wareHouse.hasVolunteer(volunteerId))
     {
-        string statusToPrint;
-        const Volunteer &volunteerToPrint = wareHouse.getVolunteer(volunteerId);
-        statusToPrint = volunteerToPrint.toString();
-
-        cout << statusToPrint << endl;
-        complete();
+        error("Volunteer doesn't exist");
+        return;
     }
-    else
-    {
-        error("Volunteer doesn’t exist");
-    };
+    cout << wareHouse.getVolunteer(volunteerId).toString() << endl;
+    complete();
 }
 
 string PrintVolunteerStatus::toString() const
 {
-    ActionStatus status = getStatus();
-    if (status == ActionStatus::COMPLETED)
-    {
-        return "volunteerStatus " + std::to_string(volunteerId) + " COMPLETED";
-    }
-    else
-    {
-        return "volunteerStatus " + std::to_string(volunteerId) + " ERROR";
-    }
+    return "volunteerStatus " + to_string(volunteerId) + " " + statusString();
 }
 
-PrintVolunteerStatus *PrintVolunteerStatus::clone() const
-{
-    return new PrintVolunteerStatus(*this);
-}
+PrintVolunteerStatus *PrintVolunteerStatus::clone() const { return new PrintVolunteerStatus(*this); }
 
-// Implementations for PrintActionsLog
+// PrintActionsLog
 
 PrintActionsLog::PrintActionsLog() {}
 
 void PrintActionsLog::act(WareHouse &wareHouse)
 {
-    wareHouse.printActionsLog();
+    // This action joins the log only after it runs, so it never prints itself.
+    for (const BaseAction *action : wareHouse.getActions())
+    {
+        cout << action->toString() << endl;
+    }
     complete();
 }
 
-string PrintActionsLog::toString() const
-{
-    return "log COMPLETED";
-}
+string PrintActionsLog::toString() const { return "log " + statusString(); }
 
-PrintActionsLog *PrintActionsLog::clone() const
-{
-    return new PrintActionsLog(*this);
-}
+PrintActionsLog *PrintActionsLog::clone() const { return new PrintActionsLog(*this); }
 
-// Implementations for Close
+// Close
 
 Close::Close() {}
 
@@ -296,68 +199,140 @@ void Close::act(WareHouse &wareHouse)
     complete();
 }
 
-string Close::toString() const
-{
-    return "close COMPLETED";
-}
+string Close::toString() const { return "close " + statusString(); }
 
-Close *Close::clone() const
-{
-    return new Close(*this);
-}
+Close *Close::clone() const { return new Close(*this); }
 
-// Implementations for BackupWareHouse
+// BackupWareHouse
 
 BackupWareHouse::BackupWareHouse() {}
 
 void BackupWareHouse::act(WareHouse &wareHouse)
 {
-    backup = new WareHouse(wareHouse);
+    if (backup == nullptr)
+    {
+        backup = new WareHouse(wareHouse);
+    }
+    else
+    {
+        *backup = wareHouse; // Reuse the old backup instead of leaking it
+    }
     complete();
 }
 
-string BackupWareHouse::toString() const
-{
-    return "backup COMPLETED";
-}
+string BackupWareHouse::toString() const { return "backup " + statusString(); }
 
-BackupWareHouse *BackupWareHouse::clone() const
-{
-    return new BackupWareHouse(*this);
-}
+BackupWareHouse *BackupWareHouse::clone() const { return new BackupWareHouse(*this); }
 
-// Implementations for RestoreWareHouse
+// RestoreWareHouse
+
 RestoreWareHouse::RestoreWareHouse() {}
 
 void RestoreWareHouse::act(WareHouse &wareHouse)
 {
-    // IF no backup is available:
     if (backup == nullptr)
     {
         error("No backup available");
+        return;
     }
-    // IF there is a backup available:
-    else
-    {
-        wareHouse = *backup;
-        complete();
-    }
+    wareHouse = *backup;
+    complete();
 }
 
-string RestoreWareHouse::toString() const
+string RestoreWareHouse::toString() const { return "restore " + statusString(); }
+
+RestoreWareHouse *RestoreWareHouse::clone() const { return new RestoreWareHouse(*this); }
+
+// Parsing user input
+
+// Reads one int that must be >= min, and is not followed by junk like "3x".
+static bool readInt(std::istringstream &in, int &value, int min)
 {
-    ActionStatus status = getStatus();
-    if (status == ActionStatus::COMPLETED)
+    string token;
+    if (!(in >> token))
     {
-        return "restore COMPLETED";
+        return false;
+    }
+    std::istringstream number(token);
+    char extra;
+    return (number >> value) && !(number >> extra) && value >= min;
+}
+
+static bool atEnd(std::istringstream &in)
+{
+    string extra;
+    return !(in >> extra);
+}
+
+BaseAction *parseAction(const string &line, string &usage)
+{
+    std::istringstream in(line);
+    string command;
+    usage.clear();
+    if (!(in >> command))
+    {
+        return nullptr;
+    }
+
+    int number = 0;
+    if (command == "step")
+    {
+        usage = "step <number_of_steps>";
+        if (readInt(in, number, 1) && atEnd(in))
+            return new SimulateStep(number);
+    }
+    else if (command == "order")
+    {
+        usage = "order <customer_id>";
+        if (readInt(in, number, 0) && atEnd(in))
+            return new AddOrder(number);
+    }
+    else if (command == "customer")
+    {
+        usage = "customer <name> <soldier|civilian> <distance> <max_orders>";
+        string name, type;
+        int distance = 0, maxOrders = 0;
+        if ((in >> name >> type) && (type == "soldier" || type == "civilian") &&
+            readInt(in, distance, 0) && readInt(in, maxOrders, 0) && atEnd(in))
+            return new AddCustomer(name, type, distance, maxOrders);
+    }
+    else if (command == "orderStatus")
+    {
+        usage = "orderStatus <order_id>";
+        if (readInt(in, number, 0) && atEnd(in))
+            return new PrintOrderStatus(number);
+    }
+    else if (command == "customerStatus")
+    {
+        usage = "customerStatus <customer_id>";
+        if (readInt(in, number, 0) && atEnd(in))
+            return new PrintCustomerStatus(number);
+    }
+    else if (command == "volunteerStatus")
+    {
+        usage = "volunteerStatus <volunteer_id>";
+        if (readInt(in, number, 0) && atEnd(in))
+            return new PrintVolunteerStatus(number);
+    }
+    else if (command == "log" || command == "close" || command == "backup" || command == "restore")
+    {
+        usage = command;
+        if (atEnd(in))
+        {
+            if (command == "log")
+                return new PrintActionsLog();
+            if (command == "close")
+                return new Close();
+            if (command == "backup")
+                return new BackupWareHouse();
+            return new RestoreWareHouse();
+        }
     }
     else
     {
-        return "restore ERROR";
+        usage = "Unknown command: " + command;
+        return nullptr;
     }
-}
-
-RestoreWareHouse *RestoreWareHouse::clone() const
-{
-    return new RestoreWareHouse(*this);
+    usage = "Usage: " + usage;
+    return nullptr;
 }

@@ -9,47 +9,61 @@
 class BaseAction;
 class Volunteer;
 
-// Warehouse responsible for Volunteers, Customers Actions, and Orders.
+// Warehouse responsible for Volunteers, Customers, Actions, and Orders.
+// It owns every object it points to.
 
-class WareHouse
-{
+class WareHouse {
 
-public:
-    WareHouse(const string &configFilePath); //skeleton method
-    ~WareHouse();                            // Destructor
-    WareHouse(const WareHouse &other);       // Copy Constructor
-    WareHouse &operator=(const WareHouse &other);     // Copy Assignment Operator
-    WareHouse(WareHouse &&other) noexcept;            // Move Constructor
-    WareHouse &operator=(WareHouse &&other) noexcept; // Move Assignment Operator
-    void start(); //skeleton method
-    int getOrderNumber(); 
-    void addOrder(Order *order); //skeleton method
-    void addAction(BaseAction *action); //skeleton method
-    bool hasCustomer(int customerId) const;  
-    Customer &getCustomer(int customerId) const; //skeleton method
-    bool hasVolunteer(int volunteerId);
-    Volunteer &getVolunteer(int volunteerId) const; //skeleton method
-    bool hasOrder(int orderId);
-    Order &getOrder(int orderId) const; //skeleton method
-    const vector<BaseAction *> &getActions() const; //skeleton method
-    void close(); //skeleton method
-    void open(); //skeleton method
-    int getCustomerNumber();
-    void addCustomer(const string &name, const CustomerType& customerType, int distance, int maxOrders);
-    void addVolunteer(const std::string &name, const std::string &role, int param1, int param2, int param3);
-    void printActionsLog();
-    void step();
-    bool isInVector(Order* order,vector<Order *>);
+    public:
+        WareHouse(const string &configFilePath); // Throws std::runtime_error if the file can't be read
+        ~WareHouse();
+        WareHouse(const WareHouse &other);
+        WareHouse &operator=(const WareHouse &other);
+        WareHouse(WareHouse &&other) noexcept;
+        WareHouse &operator=(WareHouse &&other) noexcept;
 
-private:
-    bool isOpen;
-    vector<BaseAction *> actionsLog;
-    vector<Volunteer *> volunteers;
-    vector<Order *> pendingOrders;
-    vector<Order *> inProcessOrders;
-    vector<Order *> completedOrders;
-    vector<Customer *> customers;
-    int customerCounter;  // For assigning unique customer IDs
-    int volunteerCounter; // For assigning unique volunteer IDs
-    int orderCounter;     // For assigning unique order IDs
+        void start();
+        void addOrder(Order *order);
+        void addAction(BaseAction *action);
+        Customer &getCustomer(int customerId) const;
+        Volunteer &getVolunteer(int volunteerId) const;
+        Order &getOrder(int orderId) const;
+        const vector<BaseAction *> &getActions() const;
+        void close();
+        void open();
+
+        bool hasCustomer(int customerId) const;
+        bool hasVolunteer(int volunteerId) const;
+        bool hasOrder(int orderId) const;
+        int addCustomer(const string &name, CustomerType customerType, int distance, int maxOrders); // Returns the new ID
+        int nextOrderId();
+        void step(); // One unit of simulated time
+
+    private:
+        bool isOpen;
+        vector<BaseAction *> actionsLog;
+        vector<Volunteer *> volunteers;
+        vector<Order *> pendingOrders;   // Sorted by ID, so older orders are always served first
+        vector<Order *> inProcessOrders;
+        vector<Order *> completedOrders;
+        vector<Customer *> customers;
+        int customerCounter;  // For assigning unique customer IDs
+        int volunteerCounter; // For assigning unique volunteer IDs
+        int orderCounter;     // For assigning unique order IDs
+
+        void loadConfig(const string &configFilePath);
+        void addVolunteer(Volunteer *volunteer);
+        Customer *findCustomer(int customerId) const;
+        Volunteer *findVolunteer(int volunteerId) const;
+        Order *findOrder(int orderId) const;
+        void pushPending(Order *order);
+
+        // The three stages of step()
+        void assignPendingOrders();
+        void advanceVolunteers();
+        void retireVolunteers();
+
+        void copyFrom(const WareHouse &other);
+        void stealFrom(WareHouse &other);
+        void freeAll();
 };

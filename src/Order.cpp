@@ -1,118 +1,62 @@
-#include "../include/Order.h"
-using namespace std;
+#include "Order.h"
 
-string Order::orderStatusToString(OrderStatus status) const
+using std::to_string;
+
+string orderStatusToString(OrderStatus status)
 {
-    switch(status)
+    switch (status)
     {
-        case OrderStatus::PENDING: return "PENDING";
-        case OrderStatus::COLLECTING: return "COLLECTING";
-        case OrderStatus::DELIVERING: return "DELIVERING";
-        case OrderStatus::COMPLETED: return "COMPLETED";
-        default: return "UNKNOWN"; 
+    case OrderStatus::PENDING:
+        return "Pending";
+    case OrderStatus::COLLECTING:
+        return "Collecting";
+    case OrderStatus::DELIVERING:
+        return "Delivering";
+    case OrderStatus::COMPLETED:
+        return "Completed";
     }
+    return "Unknown";
 }
 
-
-// Constructor
 Order::Order(int id, int customerId, int distance)
-    : id(id), customerId(customerId), distance(distance), status(OrderStatus::PENDING), collectorId(NO_VOLUNTEER), driverId(NO_VOLUNTEER)
-{}
+    : id(id), customerId(customerId), distance(distance), status(OrderStatus::PENDING),
+      collectorId(NO_VOLUNTEER), driverId(NO_VOLUNTEER) {}
 
-// Getter for id
-int Order::getId() const
+int Order::getId() const { return id; }
+
+int Order::getCustomerId() const { return customerId; }
+
+int Order::getDistance() const { return distance; }
+
+void Order::setStatus(OrderStatus newStatus) { status = newStatus; }
+
+void Order::setCollectorId(int newCollectorId) { collectorId = newCollectorId; }
+
+void Order::setDriverId(int newDriverId) { driverId = newDriverId; }
+
+int Order::getCollectorId() const { return collectorId; }
+
+int Order::getDriverId() const { return driverId; }
+
+OrderStatus Order::getStatus() const { return status; }
+
+static string idOrNone(int id)
 {
-    return id;
+    return id == NO_VOLUNTEER ? "None" : to_string(id);
 }
 
-// Getter for customerId
-int Order::getCustomerId() const
-{
-    return customerId;
-}
-
-int Order::getdistance() const {
-    return distance;
-}
-
-
-// Setter for status
-void Order::setStatus(OrderStatus newStatus)
-{
-    status = newStatus;
-}
-
-// Setter for collectorId
-void Order::setCollectorId(int newCollectorId)
-{
-    collectorId = newCollectorId;
-}
-
-// Setter for driverId
-void Order::setDriverId(int newDriverId)
-{
-    driverId = newDriverId;
-}
-
-// Getter for collectorId
-int Order::getCollectorId() const
-{
-    return collectorId;
-}
-
-// Getter for driverId
-int Order::getDriverId() const
-{
-    return driverId;
-}
-
-// Getter for status
-OrderStatus Order::getStatus() const
-{
-    return status;
-}
-
-// String representation of the order
 const string Order::toString() const
 {
-    string toReturn;
-    toReturn = "OrderID: " + std::to_string(id) + "\n"
-           "OrderStatus: " + orderStatusToString(status) + "\n"
-           "CustomerID: " + std::to_string(customerId) + "\n";
-    if (collectorId == -1){
-        toReturn = toReturn + "Collector: None" + "\n";
-
-           }
-    else{
-        toReturn = toReturn + "Collector: " + to_string(collectorId) + "\n";
-    }
-    if (driverId == -1){
-        toReturn = toReturn + "Driver: None";
-           }
-    else{
-        toReturn = toReturn + "Driver: " + to_string(driverId);
-    }
-           
-    return toReturn;
-           
+    return "OrderId: " + to_string(id) + "\n" +
+           "OrderStatus: " + orderStatusToString(status) + "\n" +
+           "CustomerID: " + to_string(customerId) + "\n" +
+           "Collector: " + idOrNone(collectorId) + "\n" +
+           "Driver: " + idOrNone(driverId);
 }
 
-const string Order::getIdAndStatus() const
+const string Order::toSummaryLine() const
 {
-    string toReturn;
-    toReturn = "OrderID: " + to_string(id) + "\n"
-                "OrderStatus: " + orderStatusToString(status) + "\n";        
-
-    return toReturn;
+    return "OrderID: " + to_string(id) +
+           ", CustomerID: " + to_string(customerId) +
+           ", Status: " + orderStatusToString(status);
 }
-
-const string Order::getClosingStatus() const
-{
-    string toReturn;
-    toReturn = "OrderID: " + to_string(id) +
-                ", CustomerID: " + to_string(customerId) +
-                ", Status: " + orderStatusToString(status);        
-
-    return toReturn;
-}
-
